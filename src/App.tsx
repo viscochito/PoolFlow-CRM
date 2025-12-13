@@ -1,15 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useLeads } from '@/hooks/useLeads';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { useAuth } from '@/contexts/AuthContext';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
 import { LeadSidebar } from '@/components/crm/LeadSidebar';
 import { NewLeadModal } from '@/components/crm/NewLeadModal';
+import { Login } from '@/components/auth/Login';
 import { Lead } from '@/types';
 import { AlertCircle, X } from 'lucide-react';
 
 function App() {
+  const { user, loading: authLoading } = useAuth();
   const [darkMode, setDarkMode] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -84,6 +87,23 @@ function App() {
       setIsSaving(false);
     }
   };
+
+  // Mostrar loading mientras se verifica la autenticación
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 dark:text-slate-400">Cargando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar login si no está autenticado
+  if (!user) {
+    return <Login />;
+  }
 
   return (
     <div className={`${darkMode ? 'dark' : ''} flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-300`}>

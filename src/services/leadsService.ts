@@ -119,6 +119,9 @@ export async function fetchLeads(): Promise<Lead[]> {
 // Crear un nuevo lead
 export async function createLead(leadData: Partial<Lead>): Promise<Lead> {
   try {
+    // Obtener usuario actual
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const now = new Date().toISOString();
     const rowData: Partial<LeadRow> = {
       ...leadToRow(leadData),
@@ -128,6 +131,7 @@ export async function createLead(leadData: Partial<Lead>): Promise<Lead> {
       source: leadData.source || 'Directo',
       last_contact: leadData.lastContact || now,
       contact_channels: leadData.contactChannels || [],
+      user_id: user?.id || null,
     };
 
     const { data, error } = await supabase
@@ -227,11 +231,15 @@ export async function addHistoryEvent(
   event: HistoryEvent
 ): Promise<void> {
   try {
+    // Obtener usuario actual
+    const { data: { user } } = await supabase.auth.getUser();
+    
     const { error } = await supabase.from('lead_history').insert([
       {
         lead_id: leadId,
         type: event.type,
         text: event.text,
+        user_id: user?.id || null,
       },
     ]);
 
