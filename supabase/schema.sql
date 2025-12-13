@@ -53,14 +53,30 @@ ALTER PUBLICATION supabase_realtime ADD TABLE leads;
 ALTER PUBLICATION supabase_realtime ADD TABLE lead_history;
 
 -- Políticas RLS (Row Level Security)
--- Por ahora permitimos acceso público, pero puedes restringirlo después con autenticación
 ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
 ALTER TABLE lead_history ENABLE ROW LEVEL SECURITY;
 
--- Política para permitir todas las operaciones (puedes restringir después)
-CREATE POLICY "Allow all operations on leads" ON leads
-  FOR ALL USING (true) WITH CHECK (true);
+-- Política para leads: usuarios autenticados pueden leer todos los leads
+CREATE POLICY "Authenticated users can read all leads" ON leads
+  FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Allow all operations on lead_history" ON lead_history
-  FOR ALL USING (true) WITH CHECK (true);
+-- Política para leads: usuarios autenticados pueden crear leads
+CREATE POLICY "Authenticated users can create leads" ON leads
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Política para leads: usuarios autenticados pueden actualizar leads
+CREATE POLICY "Authenticated users can update leads" ON leads
+  FOR UPDATE USING (auth.role() = 'authenticated');
+
+-- Política para leads: usuarios autenticados pueden eliminar leads
+CREATE POLICY "Authenticated users can delete leads" ON leads
+  FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Política para lead_history: usuarios autenticados pueden leer historial
+CREATE POLICY "Authenticated users can read history" ON lead_history
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+-- Política para lead_history: usuarios autenticados pueden crear eventos de historial
+CREATE POLICY "Authenticated users can create history" ON lead_history
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 

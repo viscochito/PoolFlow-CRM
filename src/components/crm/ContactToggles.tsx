@@ -39,7 +39,8 @@ export const ContactToggles = ({ activeChannels = [], onToggle }: ContactToggles
             }}
             className={`
               flex-1 py-1.5 flex items-center justify-center rounded-md border transition-all duration-200
-              ${isActive ? `${channel.activeClass} shadow-sm` : 'text-slate-300 border-transparent hover:bg-slate-50 dark:hover:bg-slate-800 dark:text-slate-600'}
+              ${isActive && channel.activeClass ? `${channel.activeClass} shadow-sm` : ''}
+              ${!isActive ? 'text-slate-300 border-transparent hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-600' : ''}
             `}
             title={`Marcar contacto por ${channel.id}`}
           >

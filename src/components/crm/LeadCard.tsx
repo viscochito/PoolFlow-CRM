@@ -64,14 +64,18 @@ export const LeadCard = ({
       onDragEnd={onDragEnd}
       onClick={() => onClick(lead)}
       className={`
-        group bg-white dark:bg-slate-900 p-3 rounded-lg shadow-sm border border-slate-100 dark:border-slate-800
+        group bg-white dark:bg-[#2d2d2d] p-3 rounded-lg shadow-sm border
         cursor-grab active:cursor-grabbing relative select-none
         transform transition-all duration-200 ease-out
-        ${selected ? 'ring-2 ring-teal-500 shadow-md dark:shadow-teal-900/30' : ''}
+        ${selected ? 'shadow-md' : 'border-slate-100 dark:border-[#3d3d3d]'}
         hover:-translate-y-1 hover:shadow-lg dark:hover:shadow-slate-900/50
         active:scale-105 active:rotate-2 active:shadow-xl active:z-50
-        ${isDragging ? 'border-2 border-dashed border-slate-300 dark:border-slate-600 scale-95 shadow-none rotate-0 !bg-slate-50 dark:!bg-slate-800' : ''}
+        ${isDragging ? 'border-2 border-solid border-slate-400 dark:border-slate-500 shadow-2xl scale-105 rotate-0 opacity-100 z-50' : ''}
       `}
+      style={selected ? { 
+        borderColor: '#64748b',
+        boxShadow: '0 0 0 2px rgba(100, 116, 139, 0.2), 0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+      } : {}}
     >
       {lead.source !== 'Directo' && (
         <div className="flex justify-between items-start mb-2">
@@ -88,7 +92,7 @@ export const LeadCard = ({
             onChange={(e) => setName(e.target.value)}
             onBlur={handleSaveName}
             onKeyDown={handleNameKeyDown}
-            className="font-bold text-slate-900 dark:text-white text-base w-full bg-slate-50 dark:bg-slate-800 border-b-2 border-teal-500 focus:outline-none p-0 leading-tight"
+            className="font-bold text-slate-900 dark:text-white text-base w-full bg-slate-50 dark:bg-[#353535] border-b-2 border-slate-400 focus:outline-none p-0 leading-tight"
           />
         ) : (
           <h4 
@@ -96,7 +100,7 @@ export const LeadCard = ({
               e.stopPropagation();
               setIsEditingName(true);
             }}
-            className="font-bold text-slate-900 dark:text-white text-base leading-tight cursor-text hover:text-teal-600 dark:hover:text-teal-400 transition-colors truncate"
+            className="font-bold text-slate-900 dark:text-white text-base leading-tight cursor-text truncate"
             title="Doble click para editar nombre"
           >
             {safeText(name)}
@@ -120,7 +124,7 @@ export const LeadCard = ({
       <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-slate-500 dark:text-slate-500 truncate">{safeText(lead.projectType)}</p>
         {lead.budget && (
-          <div className="flex items-center gap-1 text-xs text-slate-700 dark:text-slate-300 font-medium bg-slate-50 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+          <div className="flex items-center gap-1 text-xs text-slate-700 dark:text-slate-300 font-medium bg-slate-50 dark:bg-[#353535] px-1.5 py-0.5 rounded">
             <DollarSign className="w-3 h-3 text-slate-400 dark:text-slate-500" />
             {safeText(lead.budget)}
           </div>
