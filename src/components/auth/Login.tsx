@@ -20,10 +20,10 @@ export const Login = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl p-8 w-full max-w-md border border-slate-200 dark:border-slate-800">
+      <div className="bg-white dark:bg-[#2d2d2d] rounded-2xl shadow-2xl p-8 w-full max-w-md border border-slate-200 dark:border-[#3d3d3d]">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-teal-100 dark:bg-teal-900/30 rounded-full mb-4">
-            <LogIn className="w-8 h-8 text-teal-600 dark:text-teal-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
+            <LogIn className="w-8 h-8 text-primary-950 dark:text-primary-400" />
           </div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             PoolFlow CRM
@@ -36,7 +36,7 @@ export const Login = () => {
         <button
           onClick={handleGoogleSignIn}
           disabled={isSigningIn || loading}
-          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-700 hover:border-slate-400 dark:hover:border-slate-600 text-slate-700 dark:text-slate-200 font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-[#353535] border-2 border-slate-300 dark:border-[#3d3d3d] hover:border-slate-400 dark:hover:border-[#4d4d4d] text-slate-700 dark:text-slate-200 font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSigningIn ? (
             <>

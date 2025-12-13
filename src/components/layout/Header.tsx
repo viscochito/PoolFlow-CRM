@@ -1,6 +1,4 @@
-import { useState } from 'react';
-import { Search, Plus, Moon, Sun, FlaskConical, LogOut, User } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { Search, Plus, Moon, Sun, FlaskConical } from 'lucide-react';
 
 interface HeaderProps {
   searchQuery: string;
@@ -19,20 +17,9 @@ export const Header = ({
   onToggleDarkMode,
   onGenerateTestData 
 }: HeaderProps) => {
-  const { user, signOut } = useAuth();
-  const [showUserMenu, setShowUserMenu] = useState(false);
-
-  const handleSignOut = async () => {
-    try {
-      await signOut();
-      setShowUserMenu(false);
-    } catch (error) {
-      console.error('Error al cerrar sesión:', error);
-    }
-  };
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between flex-shrink-0 transition-colors duration-300">
+    <header className="h-16 bg-white dark:bg-[#252525] border-b border-slate-200 dark:border-[#3d3d3d] px-6 flex items-center justify-between flex-shrink-0 transition-colors duration-300">
       <div className="flex items-center gap-4 flex-1">
         <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100 hidden lg:block">Tablero Comercial</h1>
         <div className="h-5 w-px bg-slate-200 dark:bg-slate-700 hidden lg:block"></div>
@@ -41,7 +28,7 @@ export const Header = ({
           <input 
             type="text" 
             placeholder="Buscar cliente..." 
-            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-transparent focus:bg-white dark:focus:bg-slate-700 focus:ring-2 focus:ring-teal-500 rounded-lg text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-all outline-none" 
+            className="w-full pl-9 pr-4 py-2 bg-slate-100 dark:bg-[#2d2d2d] border-transparent focus:bg-white dark:focus:bg-[#353535] focus:ring-2 focus-primary rounded-lg text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 transition-all outline-none"
             value={searchQuery} 
             onChange={(e) => onSearchChange(e.target.value)} 
           />
@@ -50,67 +37,34 @@ export const Header = ({
       <div className="flex items-center gap-3 pl-4">
         <button 
           onClick={onGenerateTestData} 
-          className="p-2 text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-colors" 
+          className="p-2 text-purple-500 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded-full transition-colors" 
           title="Generar 5 Leads de Prueba"
         >
           <FlaskConical className="w-5 h-5" />
         </button>
         <button 
           onClick={onToggleDarkMode} 
-          className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors"
+          className="p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-[#353535] rounded-full transition-colors"
         >
           {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
         </button>
         <button 
           onClick={onNewLead} 
-          className="hidden sm:flex items-center gap-2 bg-slate-900 dark:bg-teal-600 hover:bg-slate-800 dark:hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+          className="hidden sm:flex items-center gap-2 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
+          style={{ 
+            backgroundColor: '#2b0071',
+            boxShadow: '0 1px 3px rgba(43, 0, 113, 0.2)'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = '#35008a';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = '#2b0071';
+          }}
         >
           <Plus className="w-4 h-4" /> 
           Nuevo Lead
         </button>
-        
-        {/* Perfil de usuario */}
-        <div className="relative">
-          <button
-            onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-          >
-            <div className="w-8 h-8 rounded-full bg-teal-500 dark:bg-teal-600 flex items-center justify-center text-white text-sm font-medium">
-              {user?.email?.charAt(0).toUpperCase() || <User className="w-4 h-4" />}
-            </div>
-            <span className="hidden md:block text-sm text-slate-700 dark:text-slate-300 max-w-[150px] truncate">
-              {user?.email || 'Usuario'}
-            </span>
-          </button>
-          
-          {showUserMenu && (
-            <>
-              <div 
-                className="fixed inset-0 z-40" 
-                onClick={() => setShowUserMenu(false)}
-              />
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 z-50 py-2">
-                <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                    {user?.email}
-                  </p>
-                  {user?.user_metadata?.full_name && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      {user.user_metadata.full_name}
-                    </p>
-                  )}
-                </div>
-                <button
-                  onClick={handleSignOut}
-                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Cerrar sesión
-                </button>
-              </div>
-            </>
-          )}
-        </div>
       </div>
     </header>
   );
