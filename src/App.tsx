@@ -1,22 +1,41 @@
 import { useState, useEffect } from 'react';
 import { useLeads } from '@/hooks/useLeads';
+import { useInmobiliariaLeads } from '@/hooks/useInmobiliariaLeads';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
+import { useColumnOrder } from '@/hooks/useColumnOrder';
+import { useCustomColumns } from '@/hooks/useCustomColumns';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
+import { CalendarView } from '@/components/calendar/CalendarView';
 import { LeadSidebar } from '@/components/crm/LeadSidebar';
 import { NewLeadModal } from '@/components/crm/NewLeadModal';
+import { ImportLeadsModal } from '@/components/crm/ImportLeadsModal';
+import { NewColumnModal } from '@/components/crm/NewColumnModal';
+import { EditColumnModal } from '@/components/crm/EditColumnModal';
 import { Login } from '@/components/auth/Login';
-import { Lead } from '@/types';
+import { Lead, Column, ContactChannel, Service } from '@/types';
 import { AlertCircle, X } from 'lucide-react';
 
 function App() {
   const { user, loading: authLoading } = useAuth();
   const [darkMode, setDarkMode] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [isEditColumnModalOpen, setIsEditColumnModalOpen] = useState(false);
+  const [editingColumn, setEditingColumn] = useState<Column | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+
+  // Usar el hook correcto según el filtro activo
+  const poolflowLeads = useLeads('leads_piscinas');
+  const inmobiliariaLeads = useInmobiliariaLeads();
+  
+  // Seleccionar el hook activo según el filtro
+  const leadsHook = activeFilter === 'inmobiliaria' ? inmobiliariaLeads : poolflowLeads;
 
   const {
     leads,
@@ -25,28 +44,38 @@ function App() {
     setSelectedLead,
     searchQuery,
     setSearchQuery,
-    activeFilter,
-    setActiveFilter,
     addLead,
     updateLeadColumn,
     updateLeadName,
     addNoteToLead,
     toggleContactChannel,
+    updateLeadServices,
     generateTestData,
+    moveLeadsFromColumn,
+    deleteLead,
     loading,
     error,
     clearError,
-  } = useLeads();
+  } = leadsHook;
 
   const {
     draggedLeadId,
     dragOverColumnId,
+    draggedColumnId,
+    dragOverColumnIndex,
     handleDragStart,
     handleDragEnd,
     handleDragOver,
     handleDragLeave,
     handleDrop,
+    handleColumnDragStart,
+    handleColumnDragOver,
+    handleColumnDrop,
+    handleColumnDragEnd,
   } = useDragAndDrop();
+
+  const { customColumns, addColumn, removeColumn, updateColumn } = useCustomColumns();
+  const { getOrderedColumns, reorderColumns } = useColumnOrder(customColumns);
 
   useEffect(() => {
     if (selectedLead) {
@@ -58,10 +87,51 @@ function App() {
   const handleAddLead = async (formData: Partial<Lead>) => {
     setIsSaving(true);
     try {
+      // El hook correcto ya está seleccionado según activeFilter, solo agregar el lead
       await addLead(formData);
       setIsModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding lead:', err);
+      // El error ya fue establecido en el hook, solo mostrar en consola
+      // El componente de error en la UI mostrará el mensaje
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleImportLeads = async (leadsData: Partial<Lead>[]) => {
+    try {
+      // El hook correcto ya está seleccionado según activeFilter
+      // Importar leads en lotes para mejor rendimiento
+      const batchSize = 5;
+      for (let i = 0; i < leadsData.length; i += batchSize) {
+        const batch = leadsData.slice(i, i + batchSize);
+        await Promise.all(batch.map(leadData => addLead(leadData)));
+      }
+    } catch (err) {
+      console.error('Error importing leads:', err);
+      throw err; // Re-lanzar para que el modal maneje el error
+    }
+  };
+
+  const handleAddLeadToColumn = async (name: string, columnId: string, contactChannels: ContactChannel[], service?: Service) => {
+    setIsSaving(true);
+    try {
+      // El hook correcto ya está seleccionado según activeFilter
+      await addLead({
+        name: name,
+        email: contactChannels.includes('mail') ? '' : '',
+        phone: contactChannels.includes('whatsapp') ? '' : '',
+        projectType: '',
+        source: 'Directo',
+        location: '',
+        columnId: columnId,
+        context: '',
+        contactChannels: contactChannels,
+        services: service ? [service] : [],
+      });
+    } catch (err) {
+      console.error('Error adding lead to column:', err);
     } finally {
       setIsSaving(false);
     }
@@ -88,6 +158,58 @@ function App() {
     }
   };
 
+  const handleAddColumn = (column: Column) => {
+    addColumn(column);
+    setIsColumnModalOpen(false);
+  };
+
+  const handleEditColumn = (column: Column) => {
+    setEditingColumn(column);
+    setIsEditColumnModalOpen(true);
+  };
+
+  const handleUpdateColumn = (column: Column) => {
+    // Si es una columna predefinida que se está editando, convertirla en personalizada
+    // pero mantener el mismo ID para que los leads sigan asociados
+    if (!column.isCustom) {
+      // Crear una nueva columna personalizada basada en la predefinida con el mismo ID
+      const customColumn: Column = {
+        ...column,
+        isCustom: true,
+      };
+      addColumn(customColumn);
+    } else {
+      // Si ya es personalizada, solo actualizarla
+      updateColumn(column.id, column);
+    }
+    setIsEditColumnModalOpen(false);
+    setEditingColumn(null);
+  };
+
+  const handleDeleteColumn = async (columnId: string) => {
+    try {
+      // Mover todos los leads de la columna eliminada a "Nuevo Lead"
+      await moveLeadsFromColumn(columnId, 'new');
+      // Eliminar la columna
+      removeColumn(columnId);
+    } catch (err) {
+      console.error('Error deleting column:', err);
+    }
+  };
+
+  const handleEditLead = (lead: Lead) => {
+    // Abrir el panel lateral con el lead seleccionado
+    setSelectedLead(lead);
+  };
+
+  const handleDeleteLead = async (leadId: string) => {
+    try {
+      await deleteLead(leadId);
+    } catch (err) {
+      console.error('Error deleting lead:', err);
+    }
+  };
+
   // Mostrar loading mientras se verifica la autenticación
   if (authLoading) {
     return (
@@ -107,19 +229,40 @@ function App() {
 
   return (
     <div className={`${darkMode ? 'dark' : ''} flex h-screen bg-slate-50 dark:bg-[#1d1d1d] text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-300`}>
-      <Sidebar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+      <Sidebar activeFilter={activeFilter} onFilterChange={(filter) => {
+        setActiveFilter(filter);
+        // Limpiar el lead seleccionado al cambiar de filtro
+        setSelectedLead(null);
+      }} />
       
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50 dark:bg-[#1d1d1d] transition-colors duration-300">
         <Header 
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onNewLead={() => setIsModalOpen(true)}
+          onImportLeads={() => setIsImportModalOpen(true)}
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onGenerateTestData={handleGenerateTestData}
         />
 
-        <div className="flex-1 overflow-x-auto overflow-y-hidden p-6 relative">
+        <div 
+          className="flex-1 overflow-x-auto overflow-y-hidden p-6 relative"
+          onClick={(e) => {
+            // Si se hace clic en el área del tablero (no en tarjetas, columnas u otros elementos interactivos), cerrar el panel
+            const target = e.target as HTMLElement;
+            // Solo cerrar si el click es directamente en el contenedor o en el área vacía del board-container
+            if (target === e.currentTarget || 
+                (target.classList.contains('board-container') && 
+                 !target.closest('[data-lead-id]') && 
+                 !target.closest('.column-header') &&
+                 !target.closest('button') &&
+                 !target.closest('input') &&
+                 !target.closest('textarea'))) {
+              setSelectedLead(null);
+            }
+          }}
+        >
           {error && (
             <div className="absolute top-4 right-4 z-50 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 shadow-lg flex items-start gap-3 max-w-md">
               <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
@@ -134,21 +277,56 @@ function App() {
               </button>
             </div>
           )}
-          <KanbanBoard
-            leads={filteredLeads}
-            loading={loading}
-            draggedLeadId={draggedLeadId}
-            dragOverColumnId={dragOverColumnId || ''}
-            selectedLeadId={selectedLead?.id || null}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={(e, columnId) => handleDrop(e, columnId, updateLeadColumn)}
-            onLeadClick={setSelectedLead}
-            onToggleChannel={toggleContactChannel}
-            onUpdateName={updateLeadName}
-          />
+          {activeFilter === 'calendar' ? (
+            <CalendarView
+              leads={leads}
+              onLeadClick={(lead) => setSelectedLead(lead)}
+              customColumns={customColumns}
+            />
+          ) : (
+            <div className="board-container">
+              <KanbanBoard
+                leads={filteredLeads}
+                loading={loading}
+                draggedLeadId={draggedLeadId}
+                dragOverColumnId={dragOverColumnId || ''}
+                draggedColumnId={draggedColumnId}
+                dragOverColumnIndex={dragOverColumnIndex}
+                columns={getOrderedColumns()}
+                selectedLeadId={selectedLead?.id || null}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={(e, columnId) => handleDrop(e, columnId, updateLeadColumn)}
+                onLeadClick={(lead) => {
+                  // Si se pasa null, cerrar el panel; si no, seleccionar el lead
+                  if (lead === null) {
+                    setSelectedLead(null);
+                  } else {
+                    setSelectedLead(lead);
+                  }
+                }}
+                onToggleChannel={toggleContactChannel}
+                onUpdateName={updateLeadName}
+                onEditLead={handleEditLead}
+                onDeleteLead={handleDeleteLead}
+                onColumnDragStart={handleColumnDragStart}
+                onColumnDragOver={handleColumnDragOver}
+                onColumnDrop={(e, targetIndex) => {
+                  if (draggedColumnId) {
+                    handleColumnDrop(e, targetIndex, reorderColumns);
+                  }
+                }}
+                onColumnDragEnd={handleColumnDragEnd}
+                onAddColumn={() => setIsColumnModalOpen(true)}
+                onEditColumn={handleEditColumn}
+                onDeleteColumn={handleDeleteColumn}
+                onAddLeadToColumn={handleAddLeadToColumn}
+                onMoveToNextColumn={updateLeadColumn}
+              />
+            </div>
+          )}
         </div>
       </main>
 
@@ -159,6 +337,7 @@ function App() {
           newNote={newNote}
           onNoteChange={setNewNote}
           onAddNote={handleAddNote}
+          onUpdateServices={updateLeadServices}
         />
       )}
 
@@ -167,6 +346,30 @@ function App() {
         onClose={() => setIsModalOpen(false)} 
         onSave={handleAddLead} 
         isSaving={isSaving} 
+      />
+
+      <ImportLeadsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleImportLeads}
+      />
+
+      <NewColumnModal 
+        isOpen={isColumnModalOpen} 
+        onClose={() => setIsColumnModalOpen(false)} 
+        onSave={handleAddColumn} 
+        isSaving={false} 
+      />
+
+      <EditColumnModal 
+        isOpen={isEditColumnModalOpen} 
+        onClose={() => {
+          setIsEditColumnModalOpen(false);
+          setEditingColumn(null);
+        }} 
+        onSave={handleUpdateColumn} 
+        column={editingColumn}
+        isSaving={false} 
       />
     </div>
   );

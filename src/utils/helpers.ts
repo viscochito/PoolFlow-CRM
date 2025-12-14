@@ -16,6 +16,12 @@ export const extractBusinessName = (input: string): string => {
 
   try {
     let urlStr = input.trim();
+    
+    // Si contiene www., procesarlo directamente
+    if (urlStr.includes('www.') && !urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
+      urlStr = 'https://' + urlStr;
+    }
+    
     if (!urlStr.startsWith('http://') && !urlStr.startsWith('https://')) {
       if (!urlStr.includes('.') || urlStr.includes(' ')) return '';
       urlStr = 'https://' + urlStr;
@@ -36,8 +42,13 @@ export const extractBusinessName = (input: string): string => {
       }
     }
 
+    // Para sitios web normales, extraer el dominio principal
     const domainParts = hostname.split('.');
-    if (domainParts.length > 0) return formatName(domainParts[0]);
+    if (domainParts.length > 0) {
+      // Si tiene múltiples partes (ej: aquakingargentina.com), tomar la primera parte antes del dominio
+      const mainDomain = domainParts[0];
+      return formatName(mainDomain);
+    }
     return '';
   } catch (e) {
     return '';

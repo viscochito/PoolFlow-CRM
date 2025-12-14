@@ -1,10 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { LogIn } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export const Login = () => {
   const { signInWithGoogle, loading } = useAuth();
   const [isSigningIn, setIsSigningIn] = useState(false);
+
+  // Asegurar que el modo oscuro esté activo en el login
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    return () => {
+      // No remover la clase dark al desmontar, ya que la app principal también la usa
+    };
+  }, []);
 
   const handleGoogleSignIn = async () => {
     try {
@@ -19,16 +27,16 @@ export const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 p-4">
-      <div className="bg-white dark:bg-[#2d2d2d] rounded-2xl shadow-2xl p-8 w-full max-w-md border border-slate-200 dark:border-[#3d3d3d]">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#1d1d1d] to-[#252525] p-4 dark">
+      <div className="bg-[#2d2d2d] rounded-2xl shadow-2xl p-8 w-full max-w-md border border-[#3d3d3d]">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full mb-4">
-            <LogIn className="w-8 h-8 text-primary-950 dark:text-primary-400" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-primary-900/30 rounded-full mb-4">
+            <LogIn className="w-8 h-8 text-primary-400" />
           </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
+          <h1 className="text-3xl font-bold text-white mb-2">
             PoolFlow CRM
           </h1>
-          <p className="text-slate-600 dark:text-slate-400">
+          <p className="text-slate-400">
             Inicia sesión para acceder al sistema
           </p>
         </div>
@@ -36,7 +44,7 @@ export const Login = () => {
         <button
           onClick={handleGoogleSignIn}
           disabled={isSigningIn || loading}
-          className="w-full flex items-center justify-center gap-3 bg-white dark:bg-[#353535] border-2 border-slate-300 dark:border-[#3d3d3d] hover:border-slate-400 dark:hover:border-[#4d4d4d] text-slate-700 dark:text-slate-200 font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full flex items-center justify-center gap-3 bg-[#353535] border-2 border-[#3d3d3d] hover:border-[#4d4d4d] text-slate-200 font-semibold py-3 px-6 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSigningIn ? (
             <>
@@ -68,7 +76,7 @@ export const Login = () => {
           )}
         </button>
 
-        <p className="text-xs text-slate-500 dark:text-slate-500 text-center mt-6">
+        <p className="text-xs text-slate-500 text-center mt-6">
           Al continuar, aceptas nuestros términos de servicio y política de privacidad
         </p>
       </div>

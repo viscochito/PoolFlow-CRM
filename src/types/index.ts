@@ -22,6 +22,16 @@ export type QuoteStatus = 'none' | 'generated' | 'sent';
 
 export type ContactChannel = 'instagram' | 'whatsapp' | 'mail';
 
+export type ServiceStatus = 'propuesto' | 'aceptado' | 'rechazado' | 'en_proceso';
+
+export interface Service {
+  id: string;
+  name: string;
+  status: ServiceStatus;
+  price: number | null;
+  isCustom?: boolean;
+}
+
 export type HistoryEventType = 'system' | 'note' | 'contact';
 
 export interface HistoryEvent {
@@ -38,20 +48,42 @@ export interface Lead {
   projectType: string;
   source: LeadSource;
   location: string;
-  columnId: LeadStatus;
+  columnId: string; // Changed from LeadStatus to string to support custom columns
   budget: string | null;
   quoteStatus: QuoteStatus;
   urgency: UrgencyLevel;
   lastContact: string;
   contactChannels: ContactChannel[];
+  services: Service[];
   context: string;
   createdAt: string;
   history: HistoryEvent[];
+  category?: 'poolflow' | 'inmobiliaria'; // Categoría del lead: poolflow (default) o inmobiliaria
 }
 
 export interface Column {
-  id: LeadStatus;
+  id: string; // Changed from LeadStatus to string to allow custom columns
   title: string;
   color: string;
+  dotColor?: string;
+  isCustom?: boolean; // Flag to identify custom columns
+}
+
+export type TaskChannel = 'whatsapp' | 'instagram' | 'mail';
+
+export type TaskStatus = 'pending' | 'done' | 'rescheduled';
+
+export interface Task {
+  id: string;
+  leadId: string;
+  date: string; // YYYY-MM-DD format
+  action: string; // Ej: "Follow-up", "Enviar video Loom", "Responder mensaje"
+  channel: TaskChannel;
+  status: TaskStatus;
+  note?: string;
+  rescheduledTo?: string; // YYYY-MM-DD format, solo si status es 'rescheduled'
+  createdAt: string;
+  updatedAt: string;
+  userId?: string;
 }
 

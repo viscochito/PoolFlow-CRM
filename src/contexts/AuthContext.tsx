@@ -47,7 +47,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             access_type: 'offline',
             prompt: 'consent',
           },
-          scopes: 'email profile',
+          scopes: 'email profile https://www.googleapis.com/auth/userinfo.profile',
         },
       });
       if (error) throw error;

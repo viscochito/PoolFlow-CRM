@@ -1,5 +1,5 @@
--- Tabla de leads
-CREATE TABLE IF NOT EXISTS leads (
+-- Tabla de leads para piscinas
+CREATE TABLE IF NOT EXISTS leads_piscinas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   phone TEXT,
@@ -13,16 +13,17 @@ CREATE TABLE IF NOT EXISTS leads (
   urgency TEXT NOT NULL DEFAULT 'Media',
   last_contact TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   contact_channels JSONB DEFAULT '[]'::jsonb,
+  services JSONB DEFAULT '[]'::jsonb,
   context TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   user_id UUID
 );
 
--- Tabla de historial de leads
-CREATE TABLE IF NOT EXISTS lead_history (
+-- Tabla de historial de leads para piscinas
+CREATE TABLE IF NOT EXISTS lead_history_piscinas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  lead_id UUID NOT NULL REFERENCES leads_piscinas(id) ON DELETE CASCADE,
   type TEXT NOT NULL DEFAULT 'system',
   text TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -30,10 +31,10 @@ CREATE TABLE IF NOT EXISTS lead_history (
 );
 
 -- Índices para mejorar rendimiento
-CREATE INDEX IF NOT EXISTS idx_leads_column_id ON leads(column_id);
-CREATE INDEX IF NOT EXISTS idx_leads_created_at ON leads(created_at);
-CREATE INDEX IF NOT EXISTS idx_lead_history_lead_id ON lead_history(lead_id);
-CREATE INDEX IF NOT EXISTS idx_lead_history_created_at ON lead_history(created_at);
+CREATE INDEX IF NOT EXISTS idx_leads_piscinas_column_id ON leads_piscinas(column_id);
+CREATE INDEX IF NOT EXISTS idx_leads_piscinas_created_at ON leads_piscinas(created_at);
+CREATE INDEX IF NOT EXISTS idx_lead_history_piscinas_lead_id ON lead_history_piscinas(lead_id);
+CREATE INDEX IF NOT EXISTS idx_lead_history_piscinas_created_at ON lead_history_piscinas(created_at);
 
 -- Función para actualizar updated_at automáticamente
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -44,39 +45,81 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Trigger para actualizar updated_at en leads
-CREATE TRIGGER update_leads_updated_at BEFORE UPDATE ON leads
+-- Trigger para actualizar updated_at en leads_piscinas
+CREATE TRIGGER update_leads_piscinas_updated_at BEFORE UPDATE ON leads_piscinas
 FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Habilitar Realtime en las tablas
-ALTER PUBLICATION supabase_realtime ADD TABLE leads;
-ALTER PUBLICATION supabase_realtime ADD TABLE lead_history;
+ALTER PUBLICATION supabase_realtime ADD TABLE leads_piscinas;
+ALTER PUBLICATION supabase_realtime ADD TABLE lead_history_piscinas;
+
+-- Tabla de tareas
+CREATE TABLE IF NOT EXISTS tasks (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  lead_id UUID NOT NULL REFERENCES leads_piscinas(id) ON DELETE CASCADE,
+  date DATE NOT NULL,
+  action TEXT NOT NULL,
+  channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'instagram', 'mail')),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'done', 'rescheduled')),
+  note TEXT,
+  rescheduled_to DATE,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  user_id UUID
+);
+
+-- Índices para tareas
+CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);
+CREATE INDEX IF NOT EXISTS idx_tasks_lead_id ON tasks(lead_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
+CREATE INDEX IF NOT EXISTS idx_tasks_user_id ON tasks(user_id);
+
+-- Trigger para actualizar updated_at en tasks
+CREATE TRIGGER update_tasks_updated_at BEFORE UPDATE ON tasks
+FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Habilitar Realtime en tasks
+ALTER PUBLICATION supabase_realtime ADD TABLE tasks;
 
 -- Políticas RLS (Row Level Security)
-ALTER TABLE leads ENABLE ROW LEVEL SECURITY;
-ALTER TABLE lead_history ENABLE ROW LEVEL SECURITY;
+ALTER TABLE leads_piscinas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE lead_history_piscinas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tasks ENABLE ROW LEVEL SECURITY;
 
--- Política para leads: usuarios autenticados pueden leer todos los leads
-CREATE POLICY "Authenticated users can read all leads" ON leads
+-- Política para leads_piscinas: usuarios autenticados pueden leer todos los leads
+CREATE POLICY "Authenticated users can read all leads_piscinas" ON leads_piscinas
   FOR SELECT USING (auth.role() = 'authenticated');
 
--- Política para leads: usuarios autenticados pueden crear leads
-CREATE POLICY "Authenticated users can create leads" ON leads
+-- Política para leads_piscinas: usuarios autenticados pueden crear leads
+CREATE POLICY "Authenticated users can create leads_piscinas" ON leads_piscinas
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
 
--- Política para leads: usuarios autenticados pueden actualizar leads
-CREATE POLICY "Authenticated users can update leads" ON leads
+-- Política para leads_piscinas: usuarios autenticados pueden actualizar leads
+CREATE POLICY "Authenticated users can update leads_piscinas" ON leads_piscinas
   FOR UPDATE USING (auth.role() = 'authenticated');
 
--- Política para leads: usuarios autenticados pueden eliminar leads
-CREATE POLICY "Authenticated users can delete leads" ON leads
+-- Política para leads_piscinas: usuarios autenticados pueden eliminar leads
+CREATE POLICY "Authenticated users can delete leads_piscinas" ON leads_piscinas
   FOR DELETE USING (auth.role() = 'authenticated');
 
--- Política para lead_history: usuarios autenticados pueden leer historial
-CREATE POLICY "Authenticated users can read history" ON lead_history
+-- Política para lead_history_piscinas: usuarios autenticados pueden leer historial
+CREATE POLICY "Authenticated users can read history_piscinas" ON lead_history_piscinas
   FOR SELECT USING (auth.role() = 'authenticated');
 
--- Política para lead_history: usuarios autenticados pueden crear eventos de historial
-CREATE POLICY "Authenticated users can create history" ON lead_history
+-- Política para lead_history_piscinas: usuarios autenticados pueden crear eventos de historial
+CREATE POLICY "Authenticated users can create history_piscinas" ON lead_history_piscinas
   FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+-- Políticas RLS para tasks
+CREATE POLICY "Authenticated users can read all tasks" ON tasks
+  FOR SELECT USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can create tasks" ON tasks
+  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can update tasks" ON tasks
+  FOR UPDATE USING (auth.role() = 'authenticated');
+
+CREATE POLICY "Authenticated users can delete tasks" ON tasks
+  FOR DELETE USING (auth.role() = 'authenticated');
 
