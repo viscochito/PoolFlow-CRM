@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Clock, Send, LogOut } from 'lucide-react';
+import { LayoutGrid, Clock, Send, Calendar, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
@@ -25,6 +25,7 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
     { id: 'all', label: 'Todos los leads', icon: LayoutGrid },
     { id: 'today', label: 'Activos hoy', icon: Clock },
     { id: 'sent', label: 'Presupuestos enviados', icon: Send },
+    { id: 'calendar', label: 'Calendario', icon: Calendar },
   ];
 
   // Obtener nombre del usuario

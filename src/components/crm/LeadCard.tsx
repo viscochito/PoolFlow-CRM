@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, DollarSign, Clock, AlertCircle, Edit2, Trash2 } from 'lucide-react';
+import { MessageSquare, DollarSign, Clock, AlertCircle, Edit2, Trash2, FileText } from 'lucide-react';
 import { Lead, ContactChannel } from '@/types';
 import { safeText, formatTimeAgo } from '@/utils/helpers';
 import { Badge } from '@/components/ui/Badge';
@@ -246,7 +246,7 @@ export const LeadCard = ({
       </div>
 
       <div className="mb-1.5 min-h-[1.25rem] flex items-start gap-1.5">
-        <MessageSquare className="w-2.5 h-2.5 mt-0.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
+        <FileText className="w-2.5 h-2.5 mt-0.5 text-slate-400 dark:text-slate-500 flex-shrink-0" />
         <div 
           className={`
             text-[11px] py-0 px-0 rounded-md border border-transparent transition-all leading-tight line-clamp-2

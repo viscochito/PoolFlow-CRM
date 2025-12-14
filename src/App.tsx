@@ -7,8 +7,10 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { KanbanBoard } from '@/components/crm/KanbanBoard';
+import { CalendarView } from '@/components/calendar/CalendarView';
 import { LeadSidebar } from '@/components/crm/LeadSidebar';
 import { NewLeadModal } from '@/components/crm/NewLeadModal';
+import { ImportLeadsModal } from '@/components/crm/ImportLeadsModal';
 import { NewColumnModal } from '@/components/crm/NewColumnModal';
 import { EditColumnModal } from '@/components/crm/EditColumnModal';
 import { Login } from '@/components/auth/Login';
@@ -19,6 +21,7 @@ function App() {
   const { user, loading: authLoading } = useAuth();
   const [darkMode, setDarkMode] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
   const [isEditColumnModalOpen, setIsEditColumnModalOpen] = useState(false);
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
@@ -83,6 +86,20 @@ function App() {
       console.error('Error adding lead:', err);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleImportLeads = async (leadsData: Partial<Lead>[]) => {
+    try {
+      // Importar leads en lotes para mejor rendimiento
+      const batchSize = 5;
+      for (let i = 0; i < leadsData.length; i += batchSize) {
+        const batch = leadsData.slice(i, i + batchSize);
+        await Promise.all(batch.map(leadData => addLead(leadData)));
+      }
+    } catch (err) {
+      console.error('Error importing leads:', err);
+      throw err; // Re-lanzar para que el modal maneje el error
     }
   };
 
@@ -207,6 +224,7 @@ function App() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           onNewLead={() => setIsModalOpen(true)}
+          onImportLeads={() => setIsImportModalOpen(true)}
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(!darkMode)}
           onGenerateTestData={handleGenerateTestData}
@@ -243,47 +261,55 @@ function App() {
               </button>
             </div>
           )}
-          <div className="board-container">
-          <KanbanBoard
-            leads={filteredLeads}
-            loading={loading}
-            draggedLeadId={draggedLeadId}
-            dragOverColumnId={dragOverColumnId || ''}
-            draggedColumnId={draggedColumnId}
-            dragOverColumnIndex={dragOverColumnIndex}
-            columns={getOrderedColumns()}
-            selectedLeadId={selectedLead?.id || null}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={(e, columnId) => handleDrop(e, columnId, updateLeadColumn)}
-            onLeadClick={(lead) => {
-              // Si se pasa null, cerrar el panel; si no, seleccionar el lead
-              if (lead === null) {
-                setSelectedLead(null);
-              } else {
-                setSelectedLead(lead);
-              }
-            }}
-            onToggleChannel={toggleContactChannel}
-            onUpdateName={updateLeadName}
-            onEditLead={handleEditLead}
-            onDeleteLead={handleDeleteLead}
-            onColumnDragStart={handleColumnDragStart}
-            onColumnDragOver={handleColumnDragOver}
-            onColumnDrop={(e, targetIndex) => {
-              if (draggedColumnId) {
-                handleColumnDrop(e, targetIndex, reorderColumns);
-              }
-            }}
-            onColumnDragEnd={handleColumnDragEnd}
-            onAddColumn={() => setIsColumnModalOpen(true)}
-            onEditColumn={handleEditColumn}
-            onDeleteColumn={handleDeleteColumn}
-            onAddLeadToColumn={handleAddLeadToColumn}
-          />
-          </div>
+          {activeFilter === 'calendar' ? (
+            <CalendarView
+              leads={leads}
+              onLeadClick={(lead) => setSelectedLead(lead)}
+              customColumns={customColumns}
+            />
+          ) : (
+            <div className="board-container">
+              <KanbanBoard
+                leads={filteredLeads}
+                loading={loading}
+                draggedLeadId={draggedLeadId}
+                dragOverColumnId={dragOverColumnId || ''}
+                draggedColumnId={draggedColumnId}
+                dragOverColumnIndex={dragOverColumnIndex}
+                columns={getOrderedColumns()}
+                selectedLeadId={selectedLead?.id || null}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={(e, columnId) => handleDrop(e, columnId, updateLeadColumn)}
+                onLeadClick={(lead) => {
+                  // Si se pasa null, cerrar el panel; si no, seleccionar el lead
+                  if (lead === null) {
+                    setSelectedLead(null);
+                  } else {
+                    setSelectedLead(lead);
+                  }
+                }}
+                onToggleChannel={toggleContactChannel}
+                onUpdateName={updateLeadName}
+                onEditLead={handleEditLead}
+                onDeleteLead={handleDeleteLead}
+                onColumnDragStart={handleColumnDragStart}
+                onColumnDragOver={handleColumnDragOver}
+                onColumnDrop={(e, targetIndex) => {
+                  if (draggedColumnId) {
+                    handleColumnDrop(e, targetIndex, reorderColumns);
+                  }
+                }}
+                onColumnDragEnd={handleColumnDragEnd}
+                onAddColumn={() => setIsColumnModalOpen(true)}
+                onEditColumn={handleEditColumn}
+                onDeleteColumn={handleDeleteColumn}
+                onAddLeadToColumn={handleAddLeadToColumn}
+              />
+            </div>
+          )}
         </div>
       </main>
 
@@ -303,6 +329,12 @@ function App() {
         onClose={() => setIsModalOpen(false)} 
         onSave={handleAddLead} 
         isSaving={isSaving} 
+      />
+
+      <ImportLeadsModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        onImport={handleImportLeads}
       />
 
       <NewColumnModal 

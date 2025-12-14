@@ -7,6 +7,8 @@ interface LeadRow {
   name: string;
   phone: string | null;
   email: string | null;
+  instagram: string | null;
+  website: string | null;
   project_type: string | null;
   source: string;
   location: string | null;
@@ -39,6 +41,8 @@ function rowToLead(row: LeadRow, history: HistoryEvent[]): Lead {
     name: row.name,
     phone: row.phone || '',
     email: row.email || '',
+    instagram: row.instagram || undefined,
+    website: row.website || undefined,
     projectType: row.project_type || '',
     source: row.source as Lead['source'],
     location: row.location || '',
@@ -61,6 +65,8 @@ function leadToRow(lead: Partial<Lead>): Partial<LeadRow> {
     name: lead.name,
     phone: lead.phone || null,
     email: lead.email || null,
+    instagram: lead.instagram || null,
+    website: lead.website || null,
     project_type: lead.projectType || null,
     source: lead.source,
     location: lead.location || null,

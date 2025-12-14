@@ -68,3 +68,21 @@ export interface Column {
   isCustom?: boolean; // Flag to identify custom columns
 }
 
+export type TaskChannel = 'whatsapp' | 'instagram' | 'mail';
+
+export type TaskStatus = 'pending' | 'done' | 'rescheduled';
+
+export interface Task {
+  id: string;
+  leadId: string;
+  date: string; // YYYY-MM-DD format
+  action: string; // Ej: "Follow-up", "Enviar video Loom", "Responder mensaje"
+  channel: TaskChannel;
+  status: TaskStatus;
+  note?: string;
+  rescheduledTo?: string; // YYYY-MM-DD format, solo si status es 'rescheduled'
+  createdAt: string;
+  updatedAt: string;
+  userId?: string;
+}
+
