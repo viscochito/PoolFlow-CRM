@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Clock, Send, Droplets, LogOut } from 'lucide-react';
+import { LayoutGrid, Clock, Send, LogOut } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
@@ -101,9 +101,13 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
   return (
     <aside className="w-64 bg-white dark:bg-[#252525] border-r border-slate-200 dark:border-[#3d3d3d] flex-shrink-0 hidden md:flex flex-col z-20 transition-colors duration-300">
       <div className="p-6 border-b border-slate-100 dark:border-[#3d3d3d]">
-        <div className="flex items-center gap-3 font-bold text-xl">
-          <Droplets className="w-7 h-7 fill-current" style={{ color: '#8b5cf6' }} />
-          <span className="text-white">Pool Flow</span>
+        <div className="flex items-center gap-3">
+          <img 
+            src="https://res.cloudinary.com/dq1uhbo74/image/upload/v1765676550/poolFlow_hses0n.png" 
+            alt="Pool Flow" 
+            className="h-10 w-auto"
+          />
+          <span className="text-white font-bold text-2xl">Pool Flow</span>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto p-4 space-y-8">
@@ -127,7 +131,7 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
           </ul>
         </div>
       </nav>
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+      <div className="p-4 border-t border-slate-100 dark:border-[#3d3d3d]">
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}

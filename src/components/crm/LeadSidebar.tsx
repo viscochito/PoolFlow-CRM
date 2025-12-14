@@ -1,6 +1,7 @@
 import { X, Save } from 'lucide-react';
-import { Lead } from '@/types';
+import { Lead, Service } from '@/types';
 import { safeText } from '@/utils/helpers';
+import { ServiceCheckbox } from './ServiceCheckbox';
 
 interface LeadSidebarProps {
   selectedLead: Lead;
@@ -8,6 +9,7 @@ interface LeadSidebarProps {
   newNote: string;
   onNoteChange: (note: string) => void;
   onAddNote: () => void;
+  onUpdateServices: (leadId: string, services: Service[]) => void;
 }
 
 export const LeadSidebar = ({ 
@@ -15,7 +17,8 @@ export const LeadSidebar = ({
   onClose, 
   newNote, 
   onNoteChange, 
-  onAddNote 
+  onAddNote,
+  onUpdateServices
 }: LeadSidebarProps) => {
   return (
     <div className="fixed inset-y-0 right-0 w-[450px] bg-white dark:bg-[#252525] shadow-2xl border-l border-slate-200 dark:border-[#3d3d3d] transform transition-transform duration-300 ease-out z-50 flex flex-col">
@@ -33,6 +36,14 @@ export const LeadSidebar = ({
       </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-6">
+        <div>
+          <ServiceCheckbox
+            services={selectedLead.services || []}
+            onServicesChange={(services) => onUpdateServices(selectedLead.id, services)}
+            compact={false}
+          />
+        </div>
+
         <div>
           <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider mb-4">Actividad</h3>
           <div className="relative border-l border-slate-200 dark:border-slate-800 ml-3 space-y-6">
@@ -55,7 +66,7 @@ export const LeadSidebar = ({
             onChange={(e) => onNoteChange(e.target.value)} 
             onKeyDown={(e) => e.key === 'Enter' && onAddNote()} 
             placeholder="Escribe una nota interna..." 
-            className="flex-1 pl-4 pr-4 py-3 bg-slate-50 dark:bg-[#2d2d2d] border-slate-200 dark:border-[#3d3d3d] rounded-lg text-sm text-slate-800 dark:text-slate-200 focus:ring-2 focus-primary focus:bg-white dark:focus:bg-[#353535] transition-all outline-none" 
+            className="flex-1 pl-4 pr-4 py-3 bg-slate-50 dark:bg-[#2d2d2d] border-slate-200 dark:border-[#3d3d3d] rounded-lg text-sm text-slate-800 dark:text-white focus:ring-2 focus-primary focus:bg-white dark:focus:bg-[#353535] transition-all outline-none" 
           />
           <button 
             onClick={onAddNote} 

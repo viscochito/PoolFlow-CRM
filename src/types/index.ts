@@ -22,6 +22,16 @@ export type QuoteStatus = 'none' | 'generated' | 'sent';
 
 export type ContactChannel = 'instagram' | 'whatsapp' | 'mail';
 
+export type ServiceStatus = 'propuesto' | 'aceptado' | 'rechazado' | 'en_proceso';
+
+export interface Service {
+  id: string;
+  name: string;
+  status: ServiceStatus;
+  price: number | null;
+  isCustom?: boolean;
+}
+
 export type HistoryEventType = 'system' | 'note' | 'contact';
 
 export interface HistoryEvent {
@@ -38,20 +48,23 @@ export interface Lead {
   projectType: string;
   source: LeadSource;
   location: string;
-  columnId: LeadStatus;
+  columnId: string; // Changed from LeadStatus to string to support custom columns
   budget: string | null;
   quoteStatus: QuoteStatus;
   urgency: UrgencyLevel;
   lastContact: string;
   contactChannels: ContactChannel[];
+  services: Service[];
   context: string;
   createdAt: string;
   history: HistoryEvent[];
 }
 
 export interface Column {
-  id: LeadStatus;
+  id: string; // Changed from LeadStatus to string to allow custom columns
   title: string;
   color: string;
+  dotColor?: string;
+  isCustom?: boolean; // Flag to identify custom columns
 }
 

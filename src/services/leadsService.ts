@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Lead, HistoryEvent, LeadStatus, ContactChannel } from '@/types';
+import { Lead, HistoryEvent, LeadStatus, ContactChannel, Service } from '@/types';
 
 // Tipos para la base de datos
 interface LeadRow {
@@ -16,6 +16,7 @@ interface LeadRow {
   urgency: string;
   last_contact: string;
   contact_channels: string[];
+  services: Service[] | null;
   context: string | null;
   created_at: string;
   updated_at: string;
@@ -41,12 +42,13 @@ function rowToLead(row: LeadRow, history: HistoryEvent[]): Lead {
     projectType: row.project_type || '',
     source: row.source as Lead['source'],
     location: row.location || '',
-    columnId: row.column_id as LeadStatus,
+    columnId: row.column_id, // Now accepts any string, not just LeadStatus
     budget: row.budget,
     quoteStatus: row.quote_status as Lead['quoteStatus'],
     urgency: row.urgency as Lead['urgency'],
     lastContact: row.last_contact,
     contactChannels: (row.contact_channels || []) as ContactChannel[],
+    services: (row.services || []) as Service[],
     context: row.context || '',
     createdAt: row.created_at,
     history: history,
@@ -68,6 +70,7 @@ function leadToRow(lead: Partial<Lead>): Partial<LeadRow> {
     urgency: lead.urgency,
     last_contact: lead.lastContact,
     contact_channels: lead.contactChannels || [],
+    services: lead.services || [],
     context: lead.context || null,
   };
 }
@@ -131,6 +134,7 @@ export async function createLead(leadData: Partial<Lead>): Promise<Lead> {
       source: leadData.source || 'Directo',
       last_contact: leadData.lastContact || now,
       contact_channels: leadData.contactChannels || [],
+      services: leadData.services || [],
       user_id: user?.id || null,
     };
 

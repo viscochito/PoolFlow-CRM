@@ -21,12 +21,12 @@ export const ContactToggles = ({ activeChannels = [], onToggle }: ContactToggles
     { 
       id: 'mail' as ContactChannel, 
       icon: Mail, 
-      activeClass: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800' 
+      activeClass: 'text-blue-600 bg-blue-50 border-blue-200 dark:bg-blue-900/30 dark:text-white dark:border-blue-800' 
     }
   ];
 
   return (
-    <div className="flex gap-2 mt-2 pt-2 border-t border-slate-50 dark:border-slate-800">
+    <div className="flex gap-1.5 mt-1 pt-1 border-t border-slate-50 dark:border-slate-800">
       {channels.map((channel) => {
         const isActive = Array.isArray(activeChannels) && activeChannels.includes(channel.id);
         const Icon = channel.icon;
@@ -38,13 +38,13 @@ export const ContactToggles = ({ activeChannels = [], onToggle }: ContactToggles
               onToggle(channel.id); 
             }}
             className={`
-              flex-1 py-1.5 flex items-center justify-center rounded-md border transition-all duration-200
+              flex-1 py-1 flex items-center justify-center rounded-md border transition-all duration-200
               ${isActive && channel.activeClass ? `${channel.activeClass} shadow-sm` : ''}
               ${!isActive ? 'text-slate-300 border-transparent hover:bg-slate-100 dark:hover:bg-slate-700 dark:text-slate-600' : ''}
             `}
             title={`Marcar contacto por ${channel.id}`}
           >
-            <Icon className={`w-3.5 h-3.5 ${isActive ? 'fill-current opacity-20' : ''}`} strokeWidth={isActive ? 2 : 1.5} />
+            <Icon className={`w-3 h-3 ${isActive ? 'fill-current opacity-20' : ''}`} strokeWidth={isActive ? 2 : 1.5} />
           </button>
         );
       })}

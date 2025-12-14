@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS leads (
   urgency TEXT NOT NULL DEFAULT 'Media',
   last_contact TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   contact_channels JSONB DEFAULT '[]'::jsonb,
+  services JSONB DEFAULT '[]'::jsonb,
   context TEXT,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

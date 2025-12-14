@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { X, PlayCircle, Hammer, Loader2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { X, Loader2 } from 'lucide-react';
 import { extractBusinessName } from '@/utils/helpers';
 import { Lead } from '@/types';
 
@@ -11,10 +11,17 @@ interface NewLeadModalProps {
 }
 
 export const NewLeadModal = ({ isOpen, onClose, onSave, isSaving }: NewLeadModalProps) => {
-  const [strategy, setStrategy] = useState<'demo' | 'custom'>('demo');
   const [contact, setContact] = useState('');
   const [company, setCompany] = useState('');
   const [notes, setNotes] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.setProperty('background-color', '#353535', 'important');
+      textareaRef.current.style.setProperty('background', '#353535', 'important');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -24,11 +31,12 @@ export const NewLeadModal = ({ isOpen, onClose, onSave, isSaving }: NewLeadModal
       name: company || 'Sin nombre',
       email: contact.includes('@') ? contact : '',
       phone: !contact.includes('@') && !contact.includes('http') ? contact : '',
-      projectType: strategy === 'demo' ? 'Interesado en Demo 3D' : 'MVP Custom Solicitado',
+      projectType: '',
       source: 'Directo',
       location: '',
       context: notes,
-      contactChannels: []
+      contactChannels: [],
+      services: []
     });
   };
 
@@ -47,44 +55,13 @@ export const NewLeadModal = ({ isOpen, onClose, onSave, isSaving }: NewLeadModal
           </button>
         </div>
         <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">Estrategia de Venta</label>
-            <div className="flex gap-4">
-              <div 
-                onClick={() => setStrategy('demo')} 
-                className={`flex-1 h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${strategy === 'demo' ? '' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 text-slate-400 dark:text-slate-500'}`}
-                style={strategy === 'demo' ? {
-                  borderColor: '#2b0071',
-                  backgroundColor: 'rgba(43, 0, 113, 0.1)',
-                  color: '#ffffff'
-                } : {}}
-              >
-                <PlayCircle className={`w-6 h-6 ${strategy === 'demo' ? '' : ''}`} 
-                  style={strategy === 'demo' ? { fill: '#ffffff', color: '#ffffff' } : {}}
-                />
-                <span className="text-[10px] font-bold uppercase tracking-wide" style={strategy === 'demo' ? { color: '#ffffff' } : {}}>Demo Virtual</span>
-              </div>
-              <div 
-                onClick={() => setStrategy('custom')} 
-                className={`flex-1 h-24 rounded-xl border-2 flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${strategy === 'custom' ? '' : 'border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700 text-slate-400 dark:text-slate-500'}`}
-                style={strategy === 'custom' ? {
-                  borderColor: '#2b0071',
-                  backgroundColor: 'rgba(43, 0, 113, 0.1)',
-                  color: '#ffffff'
-                } : {}}
-              >
-                <Hammer className="w-6 h-6" style={strategy === 'custom' ? { color: '#ffffff' } : {}} />
-                <span className="text-[10px] font-bold uppercase tracking-wide" style={strategy === 'custom' ? { color: '#ffffff' } : {}}>MVP Custom</span>
-              </div>
-            </div>
-          </div>
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div>
               <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Contacto</label>
               <input 
                 type="text" 
                 placeholder="@usuario, email o URL" 
-                className="w-full px-4 py-3 bg-white dark:bg-[#353535] border border-slate-200 dark:border-[#3d3d3d] rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder-slate-300 dark:placeholder-slate-600 focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all" 
+                className="w-full px-4 py-3 bg-white dark:bg-[#353535] border border-slate-200 dark:border-[#3d3d3d] rounded-lg text-sm text-slate-700 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 focus:border-transparent outline-none transition-all" 
                 value={contact} 
                 onChange={(e) => setContact(e.target.value)} 
                 onBlur={handleContactBlur} 
@@ -95,7 +72,7 @@ export const NewLeadModal = ({ isOpen, onClose, onSave, isSaving }: NewLeadModal
               <input 
                 type="text" 
                 placeholder="Nombre..." 
-                className="w-full px-4 py-3 bg-white dark:bg-[#353535] border border-slate-200 dark:border-[#3d3d3d] rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder-slate-300 dark:placeholder-slate-600 focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none transition-all" 
+                className="w-full px-4 py-3 bg-white dark:bg-[#353535] border border-slate-200 dark:border-[#3d3d3d] rounded-lg text-sm text-slate-700 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 focus:border-transparent outline-none transition-all" 
                 value={company} 
                 onChange={(e) => setCompany(e.target.value)} 
               />
@@ -104,11 +81,27 @@ export const NewLeadModal = ({ isOpen, onClose, onSave, isSaving }: NewLeadModal
           <div className="mb-8">
             <label className="block text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-2">Notas</label>
             <textarea 
+              ref={textareaRef}
               rows={3} 
               placeholder="Detalles clave..." 
-              className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-200 placeholder-slate-300 dark:placeholder-slate-600 focus:ring-2 focus-primary focus:border-transparent outline-none resize-none transition-all" 
+              className="w-full px-4 py-3 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-white placeholder-slate-300 dark:placeholder-slate-600 focus:ring-2 focus:ring-slate-400 dark:focus:ring-slate-600 focus:border-transparent outline-none resize-none transition-all"
+              style={{
+                backgroundColor: '#353535'
+              } as React.CSSProperties}
+              onFocus={(e) => {
+                e.currentTarget.style.setProperty('background-color', '#353535', 'important');
+                e.currentTarget.style.setProperty('background', '#353535', 'important');
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.setProperty('background-color', '#353535', 'important');
+                e.currentTarget.style.setProperty('background', '#353535', 'important');
+              }}
               value={notes} 
-              onChange={(e) => setNotes(e.target.value)} 
+              onChange={(e) => {
+                setNotes(e.target.value);
+                e.currentTarget.style.setProperty('background-color', '#353535', 'important');
+                e.currentTarget.style.setProperty('background', '#353535', 'important');
+              }} 
             />
           </div>
           <div className="flex items-center justify-end gap-6">
