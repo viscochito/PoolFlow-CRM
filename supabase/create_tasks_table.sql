@@ -4,7 +4,7 @@
 -- Tabla de tareas
 CREATE TABLE IF NOT EXISTS tasks (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  lead_id UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  lead_id UUID NOT NULL REFERENCES leads_piscinas(id) ON DELETE CASCADE,
   date DATE NOT NULL,
   action TEXT NOT NULL,
   channel TEXT NOT NULL CHECK (channel IN ('whatsapp', 'instagram', 'mail')),

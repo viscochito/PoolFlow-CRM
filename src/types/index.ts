@@ -58,6 +58,7 @@ export interface Lead {
   context: string;
   createdAt: string;
   history: HistoryEvent[];
+  category?: 'poolflow' | 'inmobiliaria'; // Categoría del lead: poolflow (default) o inmobiliaria
 }
 
 export interface Column {

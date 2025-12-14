@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLeads } from '@/hooks/useLeads';
+import { useInmobiliariaLeads } from '@/hooks/useInmobiliariaLeads';
 import { useDragAndDrop } from '@/hooks/useDragAndDrop';
 import { useColumnOrder } from '@/hooks/useColumnOrder';
 import { useCustomColumns } from '@/hooks/useCustomColumns';
@@ -27,6 +28,14 @@ function App() {
   const [editingColumn, setEditingColumn] = useState<Column | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [activeFilter, setActiveFilter] = useState('all');
+
+  // Usar el hook correcto según el filtro activo
+  const poolflowLeads = useLeads('leads_piscinas');
+  const inmobiliariaLeads = useInmobiliariaLeads();
+  
+  // Seleccionar el hook activo según el filtro
+  const leadsHook = activeFilter === 'inmobiliaria' ? inmobiliariaLeads : poolflowLeads;
 
   const {
     leads,
@@ -35,8 +44,6 @@ function App() {
     setSelectedLead,
     searchQuery,
     setSearchQuery,
-    activeFilter,
-    setActiveFilter,
     addLead,
     updateLeadColumn,
     updateLeadName,
@@ -49,7 +56,7 @@ function App() {
     loading,
     error,
     clearError,
-  } = useLeads();
+  } = leadsHook;
 
   const {
     draggedLeadId,
@@ -80,10 +87,13 @@ function App() {
   const handleAddLead = async (formData: Partial<Lead>) => {
     setIsSaving(true);
     try {
+      // El hook correcto ya está seleccionado según activeFilter, solo agregar el lead
       await addLead(formData);
       setIsModalOpen(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error adding lead:', err);
+      // El error ya fue establecido en el hook, solo mostrar en consola
+      // El componente de error en la UI mostrará el mensaje
     } finally {
       setIsSaving(false);
     }
@@ -91,6 +101,7 @@ function App() {
 
   const handleImportLeads = async (leadsData: Partial<Lead>[]) => {
     try {
+      // El hook correcto ya está seleccionado según activeFilter
       // Importar leads en lotes para mejor rendimiento
       const batchSize = 5;
       for (let i = 0; i < leadsData.length; i += batchSize) {
@@ -106,6 +117,7 @@ function App() {
   const handleAddLeadToColumn = async (name: string, columnId: string, contactChannels: ContactChannel[], service?: Service) => {
     setIsSaving(true);
     try {
+      // El hook correcto ya está seleccionado según activeFilter
       await addLead({
         name: name,
         email: contactChannels.includes('mail') ? '' : '',
@@ -217,7 +229,11 @@ function App() {
 
   return (
     <div className={`${darkMode ? 'dark' : ''} flex h-screen bg-slate-50 dark:bg-[#1d1d1d] text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-300`}>
-      <Sidebar activeFilter={activeFilter} onFilterChange={setActiveFilter} />
+      <Sidebar activeFilter={activeFilter} onFilterChange={(filter) => {
+        setActiveFilter(filter);
+        // Limpiar el lead seleccionado al cambiar de filtro
+        setSelectedLead(null);
+      }} />
       
       <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50 dark:bg-[#1d1d1d] transition-colors duration-300">
         <Header 
@@ -307,6 +323,7 @@ function App() {
                 onEditColumn={handleEditColumn}
                 onDeleteColumn={handleDeleteColumn}
                 onAddLeadToColumn={handleAddLeadToColumn}
+                onMoveToNextColumn={updateLeadColumn}
               />
             </div>
           )}

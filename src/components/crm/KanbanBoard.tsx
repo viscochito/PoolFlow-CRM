@@ -32,6 +32,7 @@ interface KanbanBoardProps {
   onEditColumn: (column: Column) => void;
   onDeleteColumn: (columnId: string) => void;
   onAddLeadToColumn: (name: string, columnId: string, contactChannels: ContactChannel[], service?: Service) => void;
+  onMoveToNextColumn?: (leadId: string, nextColumnId: string) => void;
 }
 
 export const KanbanBoard = ({
@@ -61,6 +62,7 @@ export const KanbanBoard = ({
   onEditColumn,
   onDeleteColumn,
   onAddLeadToColumn,
+  onMoveToNextColumn,
 }: KanbanBoardProps) => {
   // Rastrear cuándo se movió cada lead a su columna actual
   const columnMoveTimestamps = useRef<Map<string, number>>(new Map());
@@ -275,6 +277,8 @@ export const KanbanBoard = ({
                   onEdit={onEditLead}
                   onDelete={onDeleteLead}
                   selected={selectedLeadId === lead.id}
+                  columns={columns}
+                  onMoveToNextColumn={onMoveToNextColumn}
                 />
               ))}
               {columnLeads.length === 0 && (

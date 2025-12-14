@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { MessageSquare, DollarSign, Clock, AlertCircle, Edit2, Trash2, FileText } from 'lucide-react';
-import { Lead, ContactChannel } from '@/types';
+import { MessageSquare, DollarSign, Clock, AlertCircle, Edit2, Trash2, FileText, ChevronRight } from 'lucide-react';
+import { Lead, ContactChannel, Column } from '@/types';
 import { safeText, formatTimeAgo } from '@/utils/helpers';
 import { Badge } from '@/components/ui/Badge';
 import { ContactToggles } from './ContactToggles';
@@ -17,6 +17,8 @@ interface LeadCardProps {
   onEdit?: (lead: Lead) => void;
   onDelete?: (leadId: string) => void;
   selected: boolean;
+  columns: Column[];
+  onMoveToNextColumn?: (leadId: string, nextColumnId: string) => void;
 }
 
 export const LeadCard = ({ 
@@ -29,7 +31,9 @@ export const LeadCard = ({
   onUpdateName,
   onEdit,
   onDelete,
-  selected 
+  selected,
+  columns,
+  onMoveToNextColumn
 }: LeadCardProps) => {
   const timeAgoData = formatTimeAgo(lead.lastContact);
   const [name, setName] = useState(lead.name || '');
@@ -105,6 +109,33 @@ export const LeadCard = ({
     }
   };
 
+  // Obtener la siguiente columna disponible
+  const getNextColumn = () => {
+    const currentIndex = columns.findIndex(col => col.id === lead.columnId);
+    if (currentIndex === -1 || currentIndex === columns.length - 1) {
+      return null; // No hay siguiente columna
+    }
+    return columns[currentIndex + 1];
+  };
+
+  const nextColumn = getNextColumn();
+
+  // Debug: verificar si hay siguiente columna
+  useEffect(() => {
+    if (nextColumn) {
+      console.log('✅ Flecha disponible para lead:', lead.name, 'Siguiente columna:', nextColumn.title);
+    } else {
+      console.log('❌ No hay siguiente columna para lead:', lead.name, 'Columna actual:', lead.columnId);
+    }
+  }, [nextColumn, lead.name, lead.columnId]);
+
+  const handleMoveToNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (nextColumn && onMoveToNextColumn) {
+      onMoveToNextColumn(lead.id, nextColumn.id);
+    }
+  };
+
   return (
     <div 
       draggable
@@ -118,10 +149,11 @@ export const LeadCard = ({
         onDragEnd(e);
       }}
       onClick={(e) => {
-        // No hacer nada si el clic fue en los botones de editar/eliminar o en sus contenedores
+        // No hacer nada si el clic fue en los botones de editar/eliminar/flecha o en sus contenedores
         const target = e.target as HTMLElement;
         if (target.closest('button[title="Editar lead"]') || 
             target.closest('button[title="Eliminar lead"]') ||
+            target.closest('button[title*="Mover a:"]') ||
             target.closest('.delete-confirm-container')) {
           return;
         }
@@ -148,16 +180,29 @@ export const LeadCard = ({
       } : {}}
     >
       {lead.source !== 'Directo' && (
-        <div className="flex justify-between items-start mb-1">
+        <div className="flex justify-between items-start mb-1 relative z-0">
           <Badge type={lead.source} />
         </div>
       )}
-      
-      {/* Iconos de editar y eliminar */}
+
+      {/* Iconos de editar, eliminar y flecha */}
       <div 
         className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-20"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Flecha para mover al siguiente estado */}
+        {nextColumn && onMoveToNextColumn && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleMoveToNext(e);
+            }}
+            className="p-1 rounded hover:bg-slate-100 dark:hover:bg-[#353535] transition-colors text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            title={`Mover a: ${nextColumn.title}`}
+          >
+            <ChevronRight className="w-3 h-3" />
+          </button>
+        )}
         {onEdit && (
           <button
             onClick={handleEdit}

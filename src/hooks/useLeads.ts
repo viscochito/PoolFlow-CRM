@@ -8,10 +8,11 @@ import {
   deleteLead as deleteLeadService,
   addHistoryEvent,
   getLeadHistory,
+  LeadTableName,
 } from '@/services/leadsService';
 import { supabase } from '@/lib/supabase';
 
-export const useLeads = () => {
+export const useLeads = (tableName: LeadTableName = 'leads_piscinas') => {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,7 +26,7 @@ export const useLeads = () => {
       try {
         setLoading(true);
         setError(null);
-        const loadedLeads = await fetchLeads();
+        const loadedLeads = await fetchLeads(tableName);
         setLeads(loadedLeads);
       } catch (err) {
         console.error('Error loading leads:', err);
@@ -36,18 +37,21 @@ export const useLeads = () => {
     };
 
     loadLeads();
-  }, []);
+  }, [tableName]);
+
+  // Obtener el nombre de la tabla de historial
+  const historyTableName = tableName === 'leads' ? 'lead_history' : 'lead_history_inmobiliaria';
 
   // Suscripción Realtime para cambios en leads
   useEffect(() => {
     const leadsChannel = supabase
-      .channel('leads-changes')
+      .channel(`leads-changes-${tableName}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'leads',
+          table: tableName,
         },
         async (payload) => {
           console.log('Lead change detected:', payload.eventType);
@@ -56,13 +60,13 @@ export const useLeads = () => {
             // Recargar el lead específico con su historial
             try {
               const { data: leadData } = await supabase
-                .from('leads')
+                .from(tableName)
                 .select('*')
                 .eq('id', payload.new.id)
                 .single();
 
               if (leadData) {
-                const history = await getLeadHistory(leadData.id);
+                const history = await getLeadHistory(leadData.id, tableName);
                 
                 // Convertir a formato Lead
                 const updatedLead: Lead = {
@@ -122,13 +126,13 @@ export const useLeads = () => {
 
     // Suscripción Realtime para cambios en historial
     const historyChannel = supabase
-      .channel('history-changes')
+      .channel(`history-changes-${tableName}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'lead_history',
+          table: historyTableName,
         },
         async (payload) => {
           console.log('History change detected:', payload.eventType);
@@ -136,7 +140,7 @@ export const useLeads = () => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             // Recargar historial del lead afectado
             try {
-              const history = await getLeadHistory(payload.new.lead_id);
+              const history = await getLeadHistory(payload.new.lead_id, tableName);
               
               setLeads((prev) =>
                 prev.map((lead) => {
@@ -165,7 +169,7 @@ export const useLeads = () => {
       leadsChannel.unsubscribe();
       historyChannel.unsubscribe();
     };
-  }, [selectedLead]);
+  }, [selectedLead, tableName, historyTableName]);
 
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
@@ -184,15 +188,27 @@ export const useLeads = () => {
   const addLead = useCallback(async (formData: Partial<Lead>) => {
     try {
       setError(null);
-      const newLead = await createLead(formData);
+      const newLead = await createLead(formData, tableName);
       setLeads((prev) => [newLead, ...prev]);
       return newLead;
-    } catch (err) {
-      console.error('Error adding lead:', err);
-      setError('Error al crear el lead. Intenta nuevamente.');
-      throw err;
+    } catch (err: any) {
+      const errorMessage = err?.message || err?.error_description || 'Error al crear el lead';
+      console.error(`Error creating lead in ${tableName}:`, err);
+      
+      // Mensajes de error más específicos
+      let userMessage = errorMessage;
+      if (errorMessage.includes('relation') && errorMessage.includes('does not exist')) {
+        userMessage = `La tabla ${tableName} no existe. Por favor, ejecuta el script SQL de creación de tablas en Supabase.`;
+      } else if (errorMessage.includes('permission denied') || errorMessage.includes('policy')) {
+        userMessage = `No tienes permisos para crear leads en ${tableName}. Verifica las políticas RLS en Supabase.`;
+      } else if (errorMessage.includes('new row violates row-level security')) {
+        userMessage = `Error de seguridad: No puedes crear leads en ${tableName}. Verifica que estés autenticado correctamente.`;
+      }
+      
+      setError(userMessage);
+      throw new Error(userMessage);
     }
-  }, []);
+  }, [tableName]);
 
   const updateLeadColumn = useCallback(async (leadId: string, newColumnId: string) => {
     try {
@@ -252,12 +268,12 @@ export const useLeads = () => {
           context: activityText,
           contactChannels: currentLead.contactChannels || [], // Preservar canales de contacto
           services: currentLead.services || [], // Preservar servicios
-        }),
+        }, tableName),
         addHistoryEvent(leadId, {
           type: 'system',
           text: activityText,
           date: new Date().toLocaleString(),
-        })
+        }, tableName)
       ]).then(([updatedLead]) => {
         // Sincronizar con la respuesta del servidor cuando termine
         // Asegurar que se preserven contactChannels y services
@@ -293,7 +309,7 @@ export const useLeads = () => {
   const updateLeadName = useCallback(async (leadId: string, newName: string) => {
     try {
       setError(null);
-      const updatedLead = await updateLead(leadId, { name: newName });
+      const updatedLead = await updateLead(leadId, { name: newName }, tableName);
       
       setLeads((prev) =>
         prev.map((lead) => (lead.id === leadId ? updatedLead : lead))
@@ -305,7 +321,7 @@ export const useLeads = () => {
       setError('Error al actualizar el nombre del lead.');
       throw err;
     }
-  }, []);
+  }, [tableName]);
 
   const addNoteToLead = useCallback(async (leadId: string, note: string) => {
     try {
@@ -317,16 +333,16 @@ export const useLeads = () => {
       };
 
       // Agregar nota al historial
-      await addHistoryEvent(leadId, newHistoryItem);
+      await addHistoryEvent(leadId, newHistoryItem, tableName);
 
       // Actualizar lead con nueva nota y contexto
       const updatedLead = await updateLead(leadId, {
         context: note,
         lastContact: new Date().toISOString(),
-      });
+      }, tableName);
 
       // Recargar historial completo
-      const history = await getLeadHistory(leadId);
+      const history = await getLeadHistory(leadId, tableName);
       const leadWithHistory = { ...updatedLead, history };
 
       setLeads((prev) =>
@@ -339,7 +355,7 @@ export const useLeads = () => {
       setError('Error al agregar la nota.');
       throw err;
     }
-  }, []);
+  }, [tableName]);
 
   const updateLeadServices = useCallback(async (leadId: string, services: Service[]) => {
     try {
@@ -349,7 +365,7 @@ export const useLeads = () => {
       const updatedLead = await updateLead(leadId, { 
         services,
         contactChannels: currentLead?.contactChannels || [], // Preservar canales de contacto
-      });
+      }, tableName);
       
       setLeads((prev) =>
         prev.map((lead) => (lead.id === leadId ? updatedLead : lead))
@@ -361,7 +377,7 @@ export const useLeads = () => {
       setError('Error al actualizar los servicios del lead.');
       throw err;
     }
-  }, [leads]);
+  }, [leads, tableName]);
 
   const toggleContactChannel = useCallback(async (lead: Lead, channelId: ContactChannel) => {
     try {
@@ -428,12 +444,12 @@ export const useLeads = () => {
 
       // Actualizar en la base de datos en segundo plano
       Promise.all([
-        updateLead(lead.id, updates),
-        historyEvent ? addHistoryEvent(lead.id, historyEvent) : Promise.resolve(),
+        updateLead(lead.id, updates, tableName),
+        historyEvent ? addHistoryEvent(lead.id, historyEvent, tableName) : Promise.resolve(),
       ]).then(async ([updatedLead]) => {
         // Sincronizar con la respuesta del servidor cuando termine
         if (historyEvent) {
-          const history = await getLeadHistory(lead.id);
+          const history = await getLeadHistory(lead.id, tableName);
           const syncedLead = { ...updatedLead, history };
           
           setLeads((prev) =>
@@ -467,7 +483,7 @@ export const useLeads = () => {
       setError('Error al actualizar el canal de contacto.');
       throw err;
     }
-  }, []);
+  }, [tableName]);
 
   const generateTestData = useCallback(async () => {
     try {
@@ -497,13 +513,13 @@ export const useLeads = () => {
           email: '',
           location: '',
           services: [],
-        });
+        }, tableName);
       }
     } catch (err) {
       console.error('Error generating test data:', err);
       setError('Error al generar datos de prueba.');
     }
-  }, []);
+  }, [tableName]);
 
   const moveLeadsFromColumn = useCallback(async (fromColumnId: string, toColumnId: string) => {
     try {
@@ -524,7 +540,7 @@ export const useLeads = () => {
   const deleteLead = useCallback(async (leadId: string) => {
     try {
       setError(null);
-      await deleteLeadService(leadId);
+      await deleteLeadService(leadId, tableName);
       
       // Remover del estado local
       setLeads((prev) => prev.filter((lead) => lead.id !== leadId));
@@ -536,7 +552,7 @@ export const useLeads = () => {
       setError('Error al eliminar el lead.');
       throw err;
     }
-  }, []);
+  }, [tableName]);
 
   const clearError = useCallback(() => {
     setError(null);

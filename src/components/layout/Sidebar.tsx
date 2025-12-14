@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { LayoutGrid, Clock, Send, Calendar, LogOut } from 'lucide-react';
+import { LayoutGrid, Clock, Send, Calendar, LogOut, Building2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface SidebarProps {
@@ -28,6 +28,9 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
     { id: 'calendar', label: 'Calendario', icon: Calendar },
   ];
 
+  // Verificar si el usuario es enzoecom.info@gmail.com para mostrar la sección de Inmobiliaria
+  const isInmobiliariaUser = user?.email === 'enzoecom.info@gmail.com';
+
   // Obtener nombre del usuario
   const getUserName = () => {
     if (!user) return 'Usuario';
@@ -52,6 +55,7 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
     if (!user) return null;
     
     // Verificar todos los campos posibles donde puede estar la foto
+    // Google OAuth generalmente guarda la foto en user_metadata.avatar_url o user_metadata.picture
     const avatarUrl = 
       user.user_metadata?.avatar_url || 
       user.user_metadata?.picture ||
@@ -66,8 +70,12 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
     
     if (avatarUrl) {
       console.log('✅ Avatar URL encontrada:', avatarUrl);
+      console.log('📋 user_metadata completo:', user.user_metadata);
+      console.log('📋 app_metadata completo:', user.app_metadata);
     } else {
       console.log('⚠️ No se encontró avatar URL en los metadatos');
+      console.log('📋 user_metadata:', user.user_metadata);
+      console.log('📋 app_metadata:', user.app_metadata);
     }
     
     return avatarUrl;
@@ -108,7 +116,7 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
             alt="Pool Flow" 
             className="h-10 w-auto"
           />
-          <span className="text-white font-bold text-2xl">Pool Flow</span>
+          <span className="text-slate-900 dark:text-white font-bold text-2xl">Pool Flow</span>
         </div>
       </div>
       <nav className="flex-1 overflow-y-auto p-4 space-y-8">
@@ -131,6 +139,27 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
             ))}
           </ul>
         </div>
+        
+        {/* Sección de Inmobiliaria - Solo visible para enzoecom.info@gmail.com */}
+        {isInmobiliariaUser && (
+          <div>
+            <h3 className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3 px-2">Inmobiliaria</h3>
+            <ul className="space-y-1">
+              <li>
+                <button 
+                  onClick={() => onFilterChange('inmobiliaria')} 
+                  className={`w-full flex items-center gap-3 px-3 py-2 text-sm rounded-lg transition-colors font-medium ${activeFilter === 'inmobiliaria' ? 'text-white' : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+                  style={activeFilter === 'inmobiliaria' ? {
+                    backgroundColor: '#2b0071'
+                  } : {}}
+                >
+                  <Building2 className="w-4 h-4" />
+                  Inmobiliaria
+                </button>
+              </li>
+            </ul>
+          </div>
+        )}
       </nav>
       <div className="p-4 border-t border-slate-100 dark:border-[#3d3d3d]">
         <div className="relative">
@@ -144,7 +173,8 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
                 alt={getUserName()}
                 className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-slate-800 dark:border-slate-900"
                 loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
+                crossOrigin="anonymous"
+                referrerPolicy="no-referrer"
                 onError={(e) => {
                   console.error('❌ Error cargando imagen de avatar:', avatarUrl);
                   console.error('Error details:', e);
@@ -174,32 +204,6 @@ export const Sidebar = ({ activeFilter, onFilterChange }: SidebarProps) => {
                 onClick={() => setShowUserMenu(false)}
               />
               <div className="absolute bottom-full left-0 mb-2 w-full bg-white dark:bg-[#2d2d2d] rounded-lg shadow-lg border border-slate-200 dark:border-[#3d3d3d] z-50 py-2">
-                <div className="px-4 py-3 border-b border-slate-200 dark:border-[#3d3d3d] flex items-center gap-3">
-                  {avatarUrl && !imageError ? (
-                    <img 
-                      src={avatarUrl} 
-                      alt={getUserName()}
-                      className="w-10 h-10 rounded-full object-cover flex-shrink-0 border-2 border-slate-800 dark:border-slate-900"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      onError={() => setImageError(true)}
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm flex-shrink-0" style={{ backgroundColor: '#2b0071' }}>
-                      {getInitials()}
-                    </div>
-                  )}
-                  <div className="flex-1 overflow-hidden min-w-0">
-                    <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
-                      {getUserName()}
-                    </p>
-                    {user?.email && (
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate">
-                        {user.email}
-                      </p>
-                    )}
-                  </div>
-                </div>
                 <button
                   onClick={handleSignOut}
                   className="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#353535] transition-colors"
